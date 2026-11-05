@@ -12,7 +12,7 @@ export function makePdf(lines: string[]): Buffer {
     const stream=['BT','/F1 11 Tf','50 790 Td','15 TL',...page.flatMap((line,i)=>i?[`T* (${escape(line)}) Tj`]:[`(${escape(line)}) Tj`]),'ET'].join('\n');
     const length=Buffer.byteLength(stream,'ascii');
     const content=add(`<< /Length ${length} >>\nstream\n${stream}\nendstream`);
-    const pageId=add(`<< /Type /Page /Parent ${root} 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 ${font} 0 R >> >> /Contents ${content} 0 R >>`);
+    const pageId=add(`<< /Type /Page /Parent ${root} 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${font} 0 R >> >> /Contents ${content} 0 R >>`);
     pageIds.push(pageId);
   }
   objects[root]=`<< /Type /Pages /Kids [${pageIds.map(x=>`${x} 0 R`).join(' ')}] /Count ${pageIds.length} >>`;

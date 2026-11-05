@@ -15,6 +15,7 @@ model users {
   sessions sessions[]
   audit_events audit_events[]
   installment_decisions installment_decisions[]
+  confirmed_cheques cheques[]
 }
 model sessions {
   token_hash String @id
@@ -31,6 +32,12 @@ model parties {
   phone String @default("")
   notes String @default("")
   created_at String
+  address String @default("")
+  contact_name String @default("")
+  active Boolean @default(true)
+  organization_id String? @db.Uuid
+  organization parties? @relation("OrgMembers", fields: [organization_id], references: [id])
+  members parties[] @relation("OrgMembers")
   borrower_accounts accounts[] @relation("Borrower")
   manager_accounts accounts[] @relation("Manager")
   contributions contributions[]
@@ -57,6 +64,7 @@ model accounts {
   manager parties? @relation("Manager", fields: [manager_id], references: [id])
   contributions contributions[]
   installments installments[]
+  cheques cheques[]
   receipts receipts[]
   distributions distributions[]
   @@index([type, arrangement])
@@ -85,6 +93,7 @@ model installments {
   account accounts @relation(fields: [account_id], references: [id])
   receipts receipts[]
   installment_decisions installment_decisions?
+  cheque cheques?
   @@unique([account_id, sequence_no])
   @@index([due_date, account_id])
 }
@@ -102,6 +111,7 @@ model receipts {
   created_at String
   account accounts @relation(fields: [account_id], references: [id])
   installment installments? @relation(fields: [installment_id], references: [id])
+  cheque cheques? @relation("ChequeReceipt")
   original receipts? @relation("Reversals", fields: [reversal_of], references: [id])
   reversal receipts? @relation("Reversals")
   @@index([account_id, installment_id])
@@ -142,4 +152,27 @@ model installment_decisions {
   updated_at String
   installment installments @relation(fields: [installment_id], references: [id])
   actor users @relation(fields: [actor_id], references: [id])
+}
+
+
+model cheques {
+  id String @id @db.Uuid
+  account_id String @db.Uuid
+  installment_id String @unique @db.Uuid
+  scheduled_date String
+  amount_paise BigInt
+  status String @default("PENDING")
+  presentation_date String?
+  result_confirmed_on String?
+  result_confirmed_at String?
+  result_actor_id String? @db.Uuid
+  receipt_id String? @unique @db.Uuid
+  created_at String
+  updated_at String
+  account accounts @relation(fields: [account_id], references: [id])
+  installment installments @relation(fields: [installment_id], references: [id])
+  result_actor users? @relation(fields: [result_actor_id], references: [id])
+  receipt receipts? @relation("ChequeReceipt", fields: [receipt_id], references: [id])
+  @@index([scheduled_date, status])
+  @@index([status, scheduled_date])
 }
