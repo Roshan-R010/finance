@@ -1,0 +1,30 @@
+{
+  "name": "family-finance",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test tests/domain.test.ts tests/edge.test.ts tests/accounts.test.ts",
+    "start": "node server.prisma.ts",
+    "dev": "node --watch server.prisma.ts",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "prisma generate",
+    "db:deploy": "prisma migrate deploy",
+    "postinstall": "prisma generate",
+    "test:postgres": "node --test tests/prisma-smoke.test.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "dotenv": "^18.0.9",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "prisma": "^7.10.1",
+    "typescript": "^7.0.2"
+  }
+}

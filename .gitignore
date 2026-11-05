@@ -1,0 +1,37 @@
+# Dependencies and generated code
+node_modules/
+src/generated/prisma/
+
+# Local databases and backups
+data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*.ffbak
+
+# Secrets and machine-specific configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Browser and build output
+.playwright-cli/
+playwright-report/
+test-results/
+coverage/
+dist/
+.next/
+*.log
+
+# Local editor and OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+playwright/.cache/
+screenshots/
+shots/
+*.trace.zip

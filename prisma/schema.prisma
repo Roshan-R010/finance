@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model users {
+  id String @id @db.Uuid
+  username String @unique
+  password_hash String
+  created_at String
+  sessions sessions[]
+  audit_events audit_events[]
+  installment_decisions installment_decisions[]
+}
+model sessions {
+  token_hash String @id
+  user_id String @db.Uuid
+  csrf_token String
+  expires_at String
+  user users @relation(fields: [user_id], references: [id])
+}
+model parties {
+  id String @id @db.Uuid
+  name String
+  kind String
+  roles String
+  phone String @default("")
+  notes String @default("")
+  created_at String
+  borrower_accounts accounts[] @relation("Borrower")
+  manager_accounts accounts[] @relation("Manager")
+  contributions contributions[]
+}
+model accounts {
+  id String @id @db.Uuid
+  reference String @unique
+  type String
+  arrangement String
+  borrower_id String? @db.Uuid
+  manager_id String? @db.Uuid
+  face_paise BigInt
+  interest_paise BigInt
+  net_paise BigInt
+  rate_text String
+  rounding_policy String
+  agreement_date String
+  funded_date String?
+  status String @default("ACTIVE")
+  notes String @default("")
+  created_at String
+  updated_at String
+  borrower parties? @relation("Borrower", fields: [borrower_id], references: [id])
+  manager parties? @relation("Manager", fields: [manager_id], references: [id])
+  contributions contributions[]
+  installments installments[]
+  receipts receipts[]
+  distributions distributions[]
+  @@index([type, arrangement])
+}
+model contributions {
+  id String @id @db.Uuid
+  account_id String @db.Uuid
+  party_id String @db.Uuid
+  input_basis String
+  entered_paise BigInt
+  face_paise BigInt
+  net_paise BigInt
+  profit_paise BigInt
+  account accounts @relation(fields: [account_id], references: [id])
+  party parties @relation(fields: [party_id], references: [id])
+  distributions distributions[]
+  @@unique([account_id, party_id])
+}
+model installments {
+  id String @id @db.Uuid
+  account_id String @db.Uuid
+  sequence_no Int
+  due_date String
+  amount_paise BigInt
+  manually_overridden Int @default(0)
+  account accounts @relation(fields: [account_id], references: [id])
+  receipts receipts[]
+  installment_decisions installment_decisions?
+  @@unique([account_id, sequence_no])
+  @@index([due_date, account_id])
+}
+model receipts {
+  id String @id @db.Uuid
+  account_id String @db.Uuid
+  installment_id String? @db.Uuid
+  source String
+  method String
+  amount_paise BigInt
+  received_date String
+  external_ref String @default("")
+  status String @default("CONFIRMED")
+  reversal_of String? @unique @db.Uuid
+  created_at String
+  account accounts @relation(fields: [account_id], references: [id])
+  installment installments? @relation(fields: [installment_id], references: [id])
+  original receipts? @relation("Reversals", fields: [reversal_of], references: [id])
+  reversal receipts? @relation("Reversals")
+  @@index([account_id, installment_id])
+}
+model distributions {
+  id String @id @db.Uuid
+  account_id String @db.Uuid
+  contribution_id String @db.Uuid
+  amount_paise BigInt
+  paid_date String
+  reference String @default("")
+  created_at String
+  account accounts @relation(fields: [account_id], references: [id])
+  contribution contributions @relation(fields: [contribution_id], references: [id])
+}
+model audit_events {
+  id String @id @db.Uuid
+  actor_id String @db.Uuid
+  entity String
+  entity_id String @db.Uuid
+  action String
+  detail String @default("")
+  created_at String
+  actor users @relation(fields: [actor_id], references: [id])
+}
+model request_keys {
+  key String @id @db.Uuid
+  actor_id String @db.Uuid
+  response_json String
+  created_at String
+}
+
+model installment_decisions {
+  installment_id String @id @db.Uuid
+  decision String
+  decided_on String
+  actor_id String @db.Uuid
+  updated_at String
+  installment installments @relation(fields: [installment_id], references: [id])
+  actor users @relation(fields: [actor_id], references: [id])
+}
