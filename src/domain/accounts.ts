@@ -15,6 +15,7 @@ export function classifyAccount(account: AccountInput) {
   if (type === 'SOLO_SELF_MANAGED' || type === 'JOINT_SELF_MANAGED') {
     if (arrangement !== 'NONE' || !borrowerId || externalManagerId || !hasSchedule) throw new Error('Invalid self-managed account');
     if (type === 'SOLO_SELF_MANAGED' && contributorIds.length !== 1) throw new Error('Solo account requires only the owner');
+    if (type === 'JOINT_SELF_MANAGED' && contributorIds.length < 2) throw new Error('Joint loan requires another contributor');
     return { scope: 'BORROWER_FACE' as const, businessEligible: true, scheduleRequired: true, physicalChequesAllowed: true };
   }
   if (type !== 'EXTERNAL' || !externalManagerId || arrangement === 'NONE') throw new Error('Invalid external account');

@@ -1,0 +1,112 @@
+/* Add Loan uses the same palette and Open Sans typography as Cheque Schedule. */
+.content:has(.new-loan-page){background:#f4f7fb}
+.content:has(.new-loan-page)>.footer-note{display:none}
+.new-loan-page{--nl-bg:#f4f7fb;--nl-surface:#fff;--nl-ink:#17243a;--nl-muted:#64748b;--nl-line:#e2e8f0;--nl-blue:#2563eb;--nl-blue-soft:#eff6ff;--nl-green:#15803d;--nl-green-soft:#f0fdf4;--nl-amber:#a16207;--nl-amber-soft:#fffbeb;--nl-red:#b91c1c;max-width:1280px;margin:0 auto;padding:22px 28px 48px;color:var(--nl-ink);font-family:'Open Sans',system-ui,sans-serif;font-size:13px}
+.new-loan-page *{min-width:0}
+.new-loan-header{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:20px}
+.new-loan-header h1{margin:0 0 4px;color:var(--nl-ink);font-family:inherit;font-size:27px;font-weight:750;line-height:1.2;letter-spacing:-.035em}
+.new-loan-header p{margin:0;color:var(--nl-muted);font-size:12px;line-height:1.5}
+.new-loan-header>a{padding:8px 2px;color:var(--nl-muted);font-size:12px;font-weight:650;text-decoration:none;text-underline-offset:3px;white-space:nowrap}
+.new-loan-header>a:hover{color:var(--nl-blue);text-decoration:underline}
+.new-loan-layout{display:grid;grid-template-columns:minmax(0,1fr) 318px;align-items:start;gap:20px}
+.new-loan-fields{overflow:hidden;background:var(--nl-surface);border:1px solid var(--nl-line);border-radius:9px}
+.new-loan-section{padding:22px 26px 24px}
+.new-loan-section+.new-loan-section{border-top:1px solid var(--nl-line)}
+.new-loan-section-head{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.new-loan-section-head>span{display:inline-grid;flex:none;place-items:center;width:28px;height:28px;border-radius:6px;background:var(--nl-blue-soft);color:var(--nl-blue);font-size:11px;font-weight:750;font-variant-numeric:tabular-nums}
+.new-loan-section-head h2{flex:1;margin:0;color:var(--nl-ink);font-family:inherit;font-size:16px;font-weight:700;letter-spacing:-.025em}
+.new-loan-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 18px}
+.new-loan-wide{grid-column:1/-1}
+.new-loan-page .field{display:flex;flex-direction:column;gap:7px}
+.new-loan-page .field label{color:#475569;font-size:11px;font-weight:700;letter-spacing:.005em}
+.new-loan-page .field :is(input,select,textarea),.new-loan-preview-action .custom-split-row input{width:100%;min-height:44px;padding:10px 12px;border:1px solid #d7e0ea;border-radius:7px;background:#fff;color:var(--nl-ink);font-family:inherit;font-size:13px;line-height:1.35;outline:0;transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease}
+.new-loan-page .field :is(input,select,textarea):hover,.new-loan-preview-action .custom-split-row input:hover{border-color:#a9bad0}
+.new-loan-page .field :is(input,select,textarea):focus,.new-loan-preview-action .custom-split-row input:focus,.new-loan-page #schedulePreview input:focus{border-color:var(--nl-blue);box-shadow:0 0 0 3px rgba(37,99,235,.12);outline:0}
+.new-loan-page .field :is(input,select,textarea):disabled{background:#f1f5f9;color:#94a3b8;cursor:not-allowed}
+.new-loan-page .field :is(input,textarea)::placeholder,.new-loan-preview-action .custom-split-row input::placeholder{color:#94a3b8}
+.new-loan-page .field textarea{min-height:72px;resize:vertical}
+.new-loan-page input[type=date]{color-scheme:light}
+.new-loan-page input[type=date]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.7}
+.new-loan-page .directory-filter{margin-bottom:3px;background:#f8fafc!important}
+.new-loan-page .add-directory{align-self:flex-start;margin-top:2px;color:var(--nl-blue);font-size:11px;font-weight:700;text-decoration:none}
+.new-loan-page .add-directory:hover{text-decoration:underline;text-underline-offset:3px}
+.new-loan-page .manager-choices{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 9px}
+.new-loan-page .manager-choice{min-height:38px;padding:8px 12px;border:1px solid var(--nl-line);border-radius:7px;background:#fff;color:var(--nl-ink);font-family:inherit;font-size:12px;font-weight:650;box-shadow:none;transition:border-color .15s ease,background-color .15s ease}
+.new-loan-page .manager-choice:hover,.new-loan-page .manager-choice[aria-pressed=true]{border-color:var(--nl-blue);background:var(--nl-blue-soft);color:#1d4ed8;transform:none;box-shadow:none}
+.new-loan-terms{grid-template-columns:repeat(3,minmax(0,1fr))}
+.new-loan-review{position:sticky;top:20px;overflow:hidden;border:1px solid #d9e4f2;border-radius:9px;background:#fff}
+.new-loan-review-head{padding:18px 21px 16px;border-bottom:1px solid #dce9fb;background:var(--nl-blue-soft)}
+.new-loan-review-head h2{margin:0;color:#194084;font-family:inherit;font-size:12px;font-weight:800;letter-spacing:.085em;text-transform:uppercase}
+.new-loan-review-head span{display:block;margin-top:5px;color:#567099;font-size:11px}
+.new-loan-review-body{padding:4px 21px 16px}
+.new-loan-review-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--nl-line)}
+.new-loan-review-row span,.new-loan-review-main span{color:var(--nl-muted);font-size:11px;font-weight:600}
+.new-loan-review-row strong{color:var(--nl-ink);font-size:14px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;letter-spacing:-.025em;overflow-wrap:anywhere}
+.new-loan-review-row:has(#preview-interest) strong{color:var(--nl-green)}
+.new-loan-review-row:last-of-type{border-bottom:0}
+.new-loan-review-main{padding:17px 0 19px;border-bottom:1px solid var(--nl-line)}
+.new-loan-review-main span{display:block;margin-bottom:6px;color:#36547c;font-weight:700}
+.new-loan-review-main strong{display:block;color:var(--nl-ink);font-size:28px;font-weight:750;line-height:1.15;letter-spacing:-.045em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.new-loan-review-actions{padding:0 21px 20px}
+.new-loan-review-actions button{width:100%;min-height:44px;padding:10px 16px;border:1px solid var(--nl-blue);border-radius:7px;background:var(--nl-blue);color:#fff;font-family:inherit;font-size:13px;font-weight:750;cursor:pointer;transition:background-color .15s ease,transform .15s ease}
+.new-loan-review-actions button:hover:not(:disabled){background:#1d4ed8;transform:translateY(-1px)}
+.new-loan-review-actions button:disabled{border-color:#cbd5e1;background:#cbd5e1;color:#475569;cursor:not-allowed}
+.new-loan-review-actions .form-error{display:block;min-height:0;margin-top:9px;color:var(--nl-red);font-size:11px;line-height:1.4}
+.new-loan-review-actions .form-error:empty{display:none}
+.new-loan-section-head>button,.new-loan-page #addGroup,.new-loan-page #previewSchedule{min-height:38px;padding:8px 13px;border:1px solid #b8cdf1;border-radius:7px;background:#fff;color:#1d4ed8;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:border-color .15s ease,background-color .15s ease}
+.new-loan-section-head>button:hover,.new-loan-page #addGroup:hover,.new-loan-page #previewSchedule:hover{border-color:var(--nl-blue);background:var(--nl-blue-soft)}
+.new-loan-section-head>button{margin-left:auto}
+.new-loan-page .partner-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(190px,1fr) auto;gap:12px;align-items:end;margin:12px 0}
+.new-loan-page .group-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:12px;align-items:end;margin:12px 0}
+.new-loan-page .remove-row{min-height:42px;padding:8px 4px;border:0;background:transparent;color:var(--nl-muted);font-family:inherit;font-size:11px;font-weight:650}
+.new-loan-page .remove-row:hover{color:var(--nl-red)}
+.new-loan-remainder{margin-top:15px;padding-top:13px;border-top:1px solid var(--nl-line);color:var(--nl-muted);font-size:12px}
+.new-loan-toggle{display:inline-flex;align-items:center;gap:8px;margin-bottom:15px;color:var(--nl-ink);font-size:12px;font-weight:650;cursor:pointer}
+.new-loan-toggle input{width:16px;height:16px;accent-color:var(--nl-blue)}
+.new-loan-schedule{grid-template-columns:repeat(2,minmax(0,1fr))}
+.new-loan-page #groupsField{padding-top:14px}
+.new-loan-preview-action{display:flex;align-items:start;flex-wrap:wrap;gap:13px;margin-top:20px;padding-top:18px;border-top:1px solid var(--nl-line)}
+.new-loan-preview-action details{flex:1;min-width:min(230px,100%);font-size:12px}
+.new-loan-preview-action summary{width:max-content;max-width:100%;padding:9px 0;color:#1d4ed8;font-weight:700;cursor:pointer;list-style-position:inside}
+.new-loan-preview-action details[open]{flex-basis:100%;padding:12px 15px 14px;border:1px solid var(--nl-line);border-radius:7px;background:#f8fafc}
+.new-loan-preview-action details[open] summary{padding:0 0 5px}
+.custom-split-row{display:flex;align-items:center;gap:8px;margin-top:10px}
+.custom-split-row .split-amount{flex:1}
+.custom-split-row .split-count{flex:none;width:78px!important}
+.custom-split-row>span{color:var(--nl-muted);font-size:14px}
+.custom-split-row .split-remove{flex:none;width:28px;height:32px;border:0;background:transparent;color:var(--nl-muted);cursor:pointer}
+.custom-split-row .split-remove:hover{color:var(--nl-red)}
+.custom-split-row .split-remove[hidden]{visibility:hidden}
+.new-loan-preview-action .custom-split-row input.split-invalid{border-color:var(--nl-red);box-shadow:0 0 0 2px rgba(185,28,28,.12)}
+.new-loan-preview-action #addSplitRow{margin-top:10px;padding:5px 0;border:0;background:transparent;color:var(--nl-blue);font:inherit;font-weight:700;cursor:pointer}
+.new-loan-preview-action details small{display:block;margin-top:8px;color:var(--nl-muted);line-height:1.4}
+.new-loan-preview-action #splitTotal{margin-top:10px;color:var(--nl-ink);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.new-loan-preview-action .split-error{display:block;margin-top:4px;color:var(--nl-red);font-size:11px;font-weight:650}
+.new-loan-page #schedulePreview:not(:empty){margin-top:20px}
+.new-loan-page #schedulePreview .section-title{margin:0;padding:13px 15px;border:1px solid var(--nl-line);border-bottom:0;border-radius:7px 7px 0 0;background:#fff;color:var(--nl-ink);font-family:inherit;font-size:12px;font-weight:750}
+.new-loan-page #schedulePreview .table-wrap{overflow-x:auto;border:1px solid var(--nl-line);border-radius:0}
+.new-loan-page #schedulePreview .table{width:100%;min-width:0;border-collapse:collapse;table-layout:fixed}
+.new-loan-page #schedulePreview .table th{padding:11px 14px;border-bottom:1px solid var(--nl-line);background:#f1f6fc;color:#5c6e87;font-family:inherit;font-size:10px;font-weight:750;letter-spacing:.025em;text-align:left;text-transform:none}
+.new-loan-page #schedulePreview .table th:first-child{width:56px}
+.new-loan-page #schedulePreview .table th:nth-child(2){width:42%}
+.new-loan-page #schedulePreview .table th:last-child{text-align:right}
+.new-loan-page #schedulePreview .table td{height:53px;padding:6px 14px;border-bottom:1px solid #e8eef5;background:#fff;color:var(--nl-ink);font-variant-numeric:tabular-nums}
+.new-loan-page #schedulePreview .table tbody tr:nth-child(even) td{background:#f9fbfe}
+.new-loan-page #schedulePreview .table tbody tr:last-child td{border-bottom:0}
+.new-loan-page #schedulePreview .table tbody td:first-child{color:#71829a;font-size:11px;font-weight:750}
+.new-loan-page #schedulePreview .table td:last-child{text-align:right}
+.new-loan-page #schedulePreview .table input{width:100%;max-width:220px;min-height:34px;padding:6px 9px;border:1px solid transparent;border-radius:5px;background:transparent;color:var(--nl-ink);font-family:inherit;font-size:12px;font-variant-numeric:tabular-nums;outline:0;transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease}
+.new-loan-page #schedulePreview .table input:hover{border-color:#cbd5e1;background:#fff}
+.new-loan-page #schedulePreview .table input.preview-amount{text-align:right}
+.new-loan-schedule-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 14px;padding:13px 15px;border:1px solid var(--nl-line);border-top:0;border-radius:0 0 7px 7px;background:#f8fafc;font-size:11px;font-variant-numeric:tabular-nums}
+.new-loan-schedule-footer strong{color:var(--nl-ink);font-size:12px}
+.new-loan-schedule-footer .schedule-match{color:var(--nl-green);font-weight:700}
+.new-loan-schedule-footer .schedule-mismatch{color:var(--nl-amber);font-weight:700}
+.new-loan-schedule-footer .schedule-mismatch[data-error=true]{color:var(--nl-red)}
+.new-loan-schedule-hint{margin:8px 0 0;color:var(--nl-muted);font-size:10px;line-height:1.4}
+.new-loan-page :is(a,button,input,select,textarea,summary):focus-visible{outline:2px solid var(--nl-blue);outline-offset:2px}
+.new-loan-page :is(a,button):active{transform:translateY(1px)}
+@media(max-width:1050px){.new-loan-layout{grid-template-columns:minmax(0,1fr) 270px;gap:14px}.new-loan-terms{grid-template-columns:repeat(2,minmax(0,1fr))}.new-loan-section{padding:20px}}
+@media(max-width:760px){.new-loan-page{padding:18px 16px 36px}.new-loan-layout{grid-template-columns:1fr}.new-loan-review{position:static}.new-loan-review-body{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.new-loan-review-main{grid-column:1/-1;grid-row:1}.new-loan-review-main strong{font-size:25px}}
+@media(max-width:540px){.new-loan-header{align-items:flex-start}.new-loan-header h1{font-size:24px}.new-loan-section{padding:18px 15px}.new-loan-form-grid,.new-loan-terms,.new-loan-schedule{grid-template-columns:1fr}.new-loan-page .partner-row,.new-loan-page .group-row{grid-template-columns:1fr}.new-loan-section-head{flex-wrap:wrap}.new-loan-preview-action details{min-width:100%}.new-loan-page #schedulePreview .table th,.new-loan-page #schedulePreview .table td{padding-left:7px;padding-right:7px}.new-loan-page #schedulePreview .table th:first-child{width:37px}.new-loan-page #schedulePreview .table th:nth-child(2){width:44%}.new-loan-page #schedulePreview .table input{font-size:11px;padding:5px 3px}.new-loan-review-body{display:block}}
+@media(prefers-reduced-motion:reduce){.new-loan-page *{transition:none!important;animation:none!important}}

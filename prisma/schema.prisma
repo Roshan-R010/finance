@@ -60,6 +60,7 @@ model accounts {
   notes String @default("")
   created_at String
   updated_at String
+  contact_name String @default("")
   borrower parties? @relation("Borrower", fields: [borrower_id], references: [id])
   manager parties? @relation("Manager", fields: [manager_id], references: [id])
   contributions contributions[]
@@ -175,4 +176,39 @@ model cheques {
   receipt receipts? @relation("ChequeReceipt", fields: [receipt_id], references: [id])
   @@index([scheduled_date, status])
   @@index([status, scheduled_date])
+}
+
+model cash_cutover {
+  id Int @id
+  started_at String
+  effective_date String
+  actor_id String @db.Uuid
+}
+
+model cash_movements {
+  id String @id @db.Uuid
+  event_key String @unique
+  kind String
+  description String
+  notes String?
+  source_id String? @db.Uuid
+  effective_date String
+  managed_in_paise BigInt @default(0)
+  managed_out_paise BigInt @default(0)
+  reversal_of String? @unique @db.Uuid
+  created_at String
+  actor_id String @db.Uuid
+  allocations cash_allocations[]
+  @@index([effective_date, created_at])
+}
+
+model cash_allocations {
+  id String @id @db.Uuid
+  movement_id String @db.Uuid
+  party_id String @db.Uuid
+  owned_delta_paise BigInt
+  managed_delta_paise BigInt
+  movement cash_movements @relation(fields: [movement_id], references: [id])
+  @@unique([movement_id, party_id])
+  @@index([party_id])
 }

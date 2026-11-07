@@ -6,14 +6,15 @@
     "node": ">=24"
   },
   "scripts": {
-    "test": "node --test tests/domain.test.ts tests/edge.test.ts tests/accounts.test.ts tests/dashboard-navigation.test.ts tests/perf-timing.test.ts tests/loan-filters-status.test.ts tests/edit-loan-and-company-layout.test.ts",
+    "test": "node --test tests/domain.test.ts tests/edge.test.ts tests/accounts.test.ts tests/three-loan-types.test.ts tests/dashboard-navigation.test.ts tests/business-analytics.test.ts tests/perf-timing.test.ts tests/loan-filters-status.test.ts tests/edit-loan-and-company-layout.test.ts",
     "start": "node server.prisma.ts",
     "dev": "node --watch server.prisma.ts",
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:deploy": "prisma migrate deploy",
     "postinstall": "prisma generate",
-    "test:postgres": "node --test tests/prisma-smoke.test.ts tests/delete-loan-and-party.test.ts"
+    "test:postgres": "node scripts/test-postgres-isolated.ts",
+    "test:postgres:current": "node --test --test-concurrency=1 tests/prisma-smoke.test.ts tests/delete-loan-and-party.test.ts tests/cash-ledger.test.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",

@@ -49,6 +49,7 @@ test('performance optimization: page transitions and API caching operate under 3
   });
 
   const document = {
+    createElement(id: string) { return createElement(id); },
     querySelector(selector: string) {
       if (selector === '#app') return app;
       if (!elementMap.has(selector)) {
@@ -108,10 +109,10 @@ test('performance optimization: page transitions and API caching operate under 3
   // Benchmark route transitions across all 5 sections
   const routes = [
     ['#/business', 'Dashboard'],
-    ['#/cheques/today', "Today's Cheques"],
+    ['#/cheques/today', 'Cheque Schedule'],
     ['#/cheques/yesterday', "Yesterday's Cheques"],
     ['#/loans', 'All Loans'],
-    ['#/parties', 'Borrowers, Organisations & Partners'],
+    ['#/parties', 'Borrowers & Partners'],
     ['#/personal', 'Dashboard']
   ];
 

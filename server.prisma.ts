@@ -5,6 +5,9 @@ import { one, all, run, transaction } from './src/prisma-db.ts';
 import { db, uuid, now, today, fail, date, str, optional, money, num, audit, idempotent, scheduleInput, createAccount, updateAccount, deleteAccount, deleteParty, accountView, recordReceipt, reverseReceipt, businessDashboard, personalDashboard, chequeList, confirmChequeResult } from './src/service.prisma.ts';
 import { makePdf } from './src/pdf.ts';
 import { chequeDepositPdf } from './src/cheque-pdf.ts';
+import { externalManagerRules } from './src/external-managers.ts';
+import { cashSummary, openCash, addCashFund, postDistributionCash } from './src/cash.prisma.ts';
+import { businessAnalytics } from './src/business-analytics.ts';
 
 const asset=(name:string)=>new URL(`./public/${name}`,import.meta.url);
 const devMode=process.env.npm_lifecycle_event==='dev';
@@ -47,7 +50,7 @@ async function cachedQuery<T>(key:string,fn:()=>Promise<T>):Promise<T>{
 
 function invalidateCache(){queryCache.clear();}
 
-const staticFiles:Record<string,string>={'/styles.css':'text/css','/responsive.css':'text/css','/design.css':'text/css','/app.js':'text/javascript'};
+const staticFiles:Record<string,string>={'/styles.css':'text/css','/responsive.css':'text/css','/design.css':'text/css','/yesterday.css':'text/css','/today.css':'text/css','/new-loan.css':'text/css','/dashboard.css':'text/css','/app.js':'text/javascript'};
 const assetCache=new Map<string,{content:Buffer|string;etag:string;mtimeMs:number}>();
 
 async function loadStaticAsset(name:string,isText=false){
@@ -78,7 +81,7 @@ async function handle(req:IncomingMessage,res:ServerResponse){
     return;
   }
   if(devMode&&req.method==='GET'&&path==='/dev.js'){res.writeHead(200,{'content-type':'text/javascript; charset=utf-8','cache-control':'no-store'});res.end(`let revision;setInterval(async()=>{try{const r=await fetch('/__dev/revision',{cache:'no-store'});const v=await r.text();if(revision&&revision!==v)location.reload();revision=v;}catch{}},1000);`);return;}
-  if(devMode&&req.method==='GET'&&path==='/__dev/revision'){const files=['index.html','styles.css','responsive.css','design.css','app.js'];const stamps=await Promise.all(files.map(f=>stat(asset(f)).then(x=>x.mtimeMs)));res.writeHead(200,{'content-type':'text/plain; charset=utf-8','cache-control':'no-store'});res.end(String(Math.max(...stamps)));return;}
+  if(devMode&&req.method==='GET'&&path==='/__dev/revision'){const files=['index.html','styles.css','responsive.css','design.css','yesterday.css','today.css','new-loan.css','app.js'];const stamps=await Promise.all(files.map(f=>stat(asset(f)).then(x=>x.mtimeMs)));res.writeHead(200,{'content-type':'text/plain; charset=utf-8','cache-control':'no-store'});res.end(String(Math.max(...stamps)));return;}
   if(req.method==='GET'&&staticFiles[path]){
     const item=await loadStaticAsset(path.slice(1));
     if(req.headers['if-none-match']===item.etag){res.writeHead(304);res.end();return;}
@@ -127,6 +130,11 @@ async function handle(req:IncomingMessage,res:ServerResponse){
     res.setHeader('set-cookie','session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');
     return respond(res,200,{ok:true});
   }
+  if(req.method==='GET'&&path==='/api/external-managers'){
+    const rules=externalManagerRules();
+    const registered=await all(db,"SELECT id,name FROM parties WHERE active=true AND roles ILIKE '%MANAGER%' AND id IN (?,?)",...rules.map(rule=>rule.id));
+    return respond(res,200,rules.flatMap(rule=>{const party=registered.find(row=>row.id===rule.id);return party?[{...rule,name:party.name}]:[];}));
+  }
   if(req.method==='GET'&&path==='/api/parties')return respond(res,200,await cachedQuery('parties',()=>all(db,`SELECT p.*,o.name organization_name,(SELECT COUNT(*) FROM accounts a WHERE a.borrower_id=p.id OR a.manager_id=p.id OR EXISTS(SELECT 1 FROM contributions c WHERE c.account_id=a.id AND c.party_id=p.id) OR EXISTS(SELECT 1 FROM parties member WHERE member.id=a.borrower_id AND member.organization_id=p.id)) loan_count FROM parties p LEFT JOIN parties o ON o.id=p.organization_id ORDER BY p.name`)));
   if(req.method==='POST'&&path==='/api/schedule/preview'){const data=await readBody(req);return respond(res,200,scheduleInput(data,money(data.face),true));}
   const party=path.match(/^\/api\/parties\/([a-f0-9-]+)$/);
@@ -169,17 +177,30 @@ async function handle(req:IncomingMessage,res:ServerResponse){
       return result;
     }));
   }
-  if(req.method==='GET'&&path==='/api/accounts')return respond(res,200,await cachedQuery('accounts',()=>all(db,`SELECT a.id,a.reference,a.type,a.arrangement,a.face_paise,a.interest_paise,a.net_paise,a.funded_date,a.status,a.agreement_date,a.rate_text,a.notes,a.borrower_id,a.manager_id,
+  if(req.method==='GET'&&path==='/api/accounts')return respond(res,200,await cachedQuery('accounts',()=>all(db,`SELECT a.id,a.reference,a.type,a.arrangement,a.face_paise,a.interest_paise,a.net_paise,a.funded_date,a.status,a.agreement_date,a.rate_text,a.notes,a.borrower_id,a.manager_id,a.contact_name,
     CASE WHEN b.kind = 'PERSON' THEN b.name ELSE '' END AS borrower_person_name,
     CASE WHEN b.kind = 'ORGANIZATION' THEN b.name ELSE o.name END AS organization_name,
     COALESCE(o.name,b.name) borrower_name,
     m.name manager_name,
-    COALESCE((SELECT SUM(CASE WHEN r.reversal_of IS NULL THEN r.amount_paise ELSE -r.amount_paise END) FROM receipts r WHERE r.account_id=a.id),0) collected_paise
+    COALESCE((SELECT SUM(CASE WHEN r.reversal_of IS NULL THEN r.amount_paise ELSE -r.amount_paise END) FROM receipts r WHERE r.account_id=a.id),0) collected_paise,
+    (SELECT COUNT(*) FROM receipts r WHERE r.account_id=a.id AND r.reversal_of IS NULL) receipt_count,
+    schedule.next_due_date,schedule.installments_left,schedule.missed_count
     FROM accounts a
     LEFT JOIN parties b ON b.id=a.borrower_id
     LEFT JOIN parties o ON o.id=b.organization_id
     LEFT JOIN parties m ON m.id=a.manager_id
-    ORDER BY a.created_at DESC`)));
+    LEFT JOIN LATERAL (
+      SELECT MIN(due_date) FILTER (WHERE paid_paise<amount_paise) next_due_date,
+        COUNT(*) FILTER (WHERE paid_paise<amount_paise) installments_left,
+        COUNT(*) FILTER (WHERE paid_paise<amount_paise AND due_date<?) missed_count
+      FROM (
+        SELECT i.due_date,i.amount_paise,
+          COALESCE((SELECT SUM(CASE WHEN r.reversal_of IS NULL THEN r.amount_paise ELSE -r.amount_paise END)
+            FROM receipts r WHERE r.installment_id=i.id),0) paid_paise
+        FROM installments i WHERE i.account_id=a.id
+      ) scheduled
+    ) schedule ON true
+    ORDER BY a.created_at DESC`,today())));
   if(req.method==='POST'&&path==='/api/accounts'){
     const data=await readBody(req);return respond(res,201,await idempotent(req.headers['idempotency-key'] as string,actor,async()=>{
       const result=await createAccount(data,actor);
@@ -222,10 +243,10 @@ async function handle(req:IncomingMessage,res:ServerResponse){
       return{id:accountStatus[1],status};
     }));
   }
-  if(req.method==='GET'&&path==='/api/cheques')return respond(res,200,await cachedQuery(`cheques:${url.searchParams.get('view')||'today'}:${url.searchParams.get('date')||''}`,()=>chequeList(url.searchParams.get('view')||'today',url.searchParams.get('date')||undefined)));
+  if(req.method==='GET'&&path==='/api/cheques')return respond(res,200,await cachedQuery(`cheques:${url.searchParams.get('view')||'today'}:${url.searchParams.get('date')||''}:${url.searchParams.get('to')||''}`,()=>chequeList(url.searchParams.get('view')||'today',url.searchParams.get('date')||undefined,url.searchParams.get('to')||undefined)));
   if(req.method==='GET'&&path==='/api/cheques/today.pdf'){
-    const report=await chequeList('today',url.searchParams.get('date')||undefined);
-    res.writeHead(200,{'content-type':'application/pdf','content-disposition':`attachment; filename="cheques-to-deposit-${report.date}.pdf"`,'cache-control':'no-store'});
+    const report=await chequeList('today',url.searchParams.get('date')||undefined,url.searchParams.get('to')||undefined);
+    res.writeHead(200,{'content-type':'application/pdf','content-disposition':`attachment; filename="cheques-to-deposit-${report.date}${report.endDate!==report.date?'-to-'+report.endDate:''}.pdf"`,'cache-control':'no-store'});
     res.end(chequeDepositPdf(report));return;
   }
   const chequeResult=path.match(/^\/api\/cheques\/([a-f0-9-]+)\/result$/);
@@ -235,12 +256,25 @@ async function handle(req:IncomingMessage,res:ServerResponse){
   const reversal=path.match(/^\/api\/receipts\/([a-f0-9-]+)\/reverse$/);
   if(req.method==='POST'&&reversal){const data=await readBody(req);return respond(res,200,await idempotent(req.headers['idempotency-key'] as string,actor,async()=>{const result=await reverseReceipt(reversal[1],data,actor);invalidateCache();return result;}));}
   const distribution=path.match(/^\/api\/accounts\/([a-f0-9-]+)\/distributions$/);
-  if(req.method==='POST'&&distribution){const data=await readBody(req),result=await idempotent(req.headers['idempotency-key'] as string,actor,async()=>{const c=await one(db,'SELECT * FROM contributions WHERE id=? AND account_id=? AND party_id<>?',data.contributionId,distribution[1],actor);if(!c)fail('Choose an external investor.');const amount=num(money(data.amount)),paid=(await one(db,'SELECT COALESCE(SUM(amount_paise),0) total FROM distributions WHERE contribution_id=?',c.id)).total;if(amount<=0||amount>c.face_paise-paid)fail('Distribution exceeds investor entitlement.');const id=uuid();await run(db,'INSERT INTO distributions VALUES (?,?,?,?,?,?,?)',id,distribution[1],c.id,amount,date(data.paidDate),optional(data.reference,120),now());await audit(actor,'distribution',id,'recorded');invalidateCache();return{id};});return respond(res,201,result);}
+  if(req.method==='POST'&&distribution){const data=await readBody(req),result=await idempotent(req.headers['idempotency-key'] as string,actor,async()=>{const c=await one(db,'SELECT * FROM contributions WHERE id=? AND account_id=? AND party_id<>?',data.contributionId,distribution[1],actor);if(!c)fail('Choose an external investor.');const amount=num(money(data.amount)),paid=(await one(db,'SELECT COALESCE(SUM(amount_paise),0) total FROM distributions WHERE contribution_id=?',c.id)).total;if(amount<=0||amount>c.face_paise-paid)fail('Distribution exceeds investor entitlement.');const id=uuid(),paidDate=date(data.paidDate);await run(db,'INSERT INTO distributions VALUES (?,?,?,?,?,?,?)',id,distribution[1],c.id,amount,paidDate,optional(data.reference,120),now());await postDistributionCash(id,distribution[1],c.party_id,amount,paidDate,actor);await audit(actor,'distribution',id,'recorded');invalidateCache();return{id};});return respond(res,201,result);}
   if(req.method==='GET'&&path==='/api/dashboard/business')return respond(res,200,await cachedQuery('dashboard:business',()=>businessDashboard()));
+  if(req.method==='GET'&&path==='/api/dashboard/business/analytics'){
+    const mode=url.searchParams.get('period')||'current',start=url.searchParams.get('start')||undefined,end=url.searchParams.get('end')||undefined;
+    return respond(res,200,await cachedQuery(`dashboard:analytics:${mode}:${start||''}:${end||''}`,()=>businessAnalytics(mode,today(),start,end)));
+  }
   if(req.method==='GET'&&path==='/api/dashboard/personal')return respond(res,200,await cachedQuery(`dashboard:personal:${actor}`,()=>personalDashboard(actor)));
+  if(req.method==='GET'&&path==='/api/cash')return respond(res,200,await cachedQuery(`cash:${actor}`,()=>cashSummary(actor)));
+  if(req.method==='POST'&&path==='/api/cash/opening'){
+    const data=await readBody(req);
+    return respond(res,201,await idempotent(req.headers['idempotency-key'] as string,actor,async()=>{const result=await openCash(data,actor);invalidateCache();return result;}));
+  }
+  if(req.method==='POST'&&path==='/api/cash/funds'){
+    const data=await readBody(req);
+    return respond(res,201,await idempotent(req.headers['idempotency-key'] as string,actor,async()=>{const result=await addCashFund(data,actor);invalidateCache();return result;}));
+  }
   if(req.method==='GET'&&path==='/api/audit')return respond(res,200,await cachedQuery('audit',()=>all(db,'SELECT a.*,u.username FROM audit_events a JOIN users u ON u.id=a.actor_id ORDER BY a.created_at DESC LIMIT 100')));
   const schedulePdf=path.match(/^\/api\/accounts\/([a-f0-9-]+)\/schedule.pdf$/);
-  if(req.method==='GET'&&schedulePdf){const v=await accountView(schedulePdf[1]);if(v.account.type==='EXTERNAL')fail('Borrower schedules are for self-managed loans only.');return pdf(res,[`Repayment schedule - ${v.account.reference}`,`Borrower: ${v.account.borrower_name}`,`Face value: INR ${(v.account.face_paise/100).toFixed(2)}`,'',...v.installments.map(i=>`${i.sequence_no}.  ${i.due_date}    INR ${(i.amount_paise/100).toFixed(2)}`)],`${v.account.reference}-schedule.pdf`);}
+  if(req.method==='GET'&&schedulePdf){const v=await accountView(schedulePdf[1]);if(v.account.type==='EXTERNAL')fail('Borrower schedules are for self-managed loans only.');const amount=(paise:number)=>'INR '+new Intl.NumberFormat('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}).format(paise/100);const displayDate=(value:string)=>{const [year,month,day]=value.split('-');return `${day} ${['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][Number(month)-1]} ${year.slice(-2)}`;};return pdf(res,[`Repayment schedule - ${v.account.reference}`,`Borrower: ${v.account.borrower_name}`,`Agreement date: ${displayDate(v.account.agreement_date)}`,`Total to repay: ${amount(v.account.face_paise)}`,'',...v.installments.map(i=>`${i.sequence_no}.  ${displayDate(i.due_date)}    ${amount(i.amount_paise)}`)],`${v.account.reference}-schedule.pdf`);}
   fail('Not found.',404);
 }
 export function startServer(port=Number(process.env.PORT||3000),host=process.env.HOST||'127.0.0.1'){
@@ -249,7 +283,7 @@ export function startServer(port=Number(process.env.PORT||3000),host=process.env
     res.setHeader('x-content-type-options','nosniff');
     res.setHeader('referrer-policy','no-referrer');
     res.setHeader('x-frame-options','DENY');
-    res.setHeader('content-security-policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+    res.setHeader('content-security-policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     handle(req,res).catch((error:any)=>{if(res.headersSent){res.end();return;}respond(res,error.status||400,{error:error.message||'Request failed.'});});
   });
   return server.listen(port,host,()=>console.log(`Finance app: http://${host}:${(server.address() as any).port}`));

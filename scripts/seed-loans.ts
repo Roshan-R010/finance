@@ -1,8 +1,9 @@
 import 'dotenv/config';
-import { db, one, run, all } from '../src/prisma-db.ts';
+import { db, one, run, all, transaction } from '../src/prisma-db.ts';
 import { uuid, now, createAccount } from '../src/service.prisma.ts';
 
 async function main() {
+  if (process.argv[2] !== '--replace-samples') throw new Error('Run with --replace-samples to replace the existing finance records.');
   console.log('--- Starting Seed: 10 Loans & Directory Entities ---');
   
   // 1. Get owner (Ayyappan)
@@ -12,6 +13,7 @@ async function main() {
   }
   const ownerId = owner.id;
   console.log(`Found owner: ${owner.name} (${ownerId})`);
+  await transaction(db, async () => {
 
   // 2. Clean existing accounts and children
   console.log('Cleaning existing accounts, cheques, receipts...');
@@ -23,6 +25,8 @@ async function main() {
   await run(db, 'DELETE FROM contributions');
   await run(db, 'DELETE FROM accounts');
   await run(db, 'DELETE FROM parties WHERE id <> ?', ownerId);
+  await run(db, 'DELETE FROM audit_events');
+  await run(db, 'DELETE FROM request_keys');
 
   // Helper to add party
   async function addParty(opts: {
@@ -126,12 +130,15 @@ async function main() {
     notes: 'IT hardware and office networking supplies'
   });
 
+  const orgSkTraders = await addParty({ name: 'SK Traders', kind: 'ORGANIZATION', roles: 'BORROWER' });
+  const orgNorthStar = await addParty({ name: 'North Star Exports', kind: 'ORGANIZATION', roles: 'BORROWER' });
+
   // 4. Create Partners (Investors and External Managers)
   console.log('Creating Partners...');
   const partnerGanesh = await addParty({
     name: 'Ganesh',
     kind: 'PERSON',
-    roles: 'INVESTOR',
+    roles: 'INVESTOR,MANAGER',
     phone: '9843100010',
     address: 'Race Course, Coimbatore',
     contactName: 'Ganesh M',
@@ -168,78 +175,7 @@ async function main() {
     notes: 'External commercial lending syndicate'
   });
 
-  // 5. Create Borrowers (individuals linked to organisations, and 1 independent)
-  console.log('Creating Borrowers...');
-  const borMurugan = await addParty({
-    name: 'K. Senthil Kumar',
-    kind: 'PERSON',
-    roles: 'BORROWER',
-    phone: '9789100001',
-    address: 'Erode',
-    organizationId: orgMurugan,
-    notes: 'Proprietor of Sri Murugan Textiles'
-  });
-
-  const borLakshmi = await addParty({
-    name: 'R. Karthik',
-    kind: 'PERSON',
-    roles: 'BORROWER',
-    phone: '9789200002',
-    address: 'Coimbatore',
-    organizationId: orgLakshmi,
-    notes: 'Managing partner of Lakshmi Auto Spares'
-  });
-
-  const borBalaji = await addParty({
-    name: 'S. Murugesan',
-    kind: 'PERSON',
-    roles: 'BORROWER',
-    phone: '9789300003',
-    address: 'Salem',
-    organizationId: orgBalaji,
-    notes: 'Proprietor of Balaji Timber'
-  });
-
-  const borRoyal = await addParty({
-    name: 'V. Suresh',
-    kind: 'PERSON',
-    roles: 'BORROWER',
-    phone: '9789400004',
-    address: 'Namakkal',
-    organizationId: orgRoyal,
-    notes: 'Partner at Royal Bakers'
-  });
-
-  const borMeenakshi = await addParty({
-    name: 'P. Ramachandran',
-    kind: 'PERSON',
-    roles: 'BORROWER',
-    phone: '9789500005',
-    address: 'Madurai',
-    organizationId: orgMeenakshi,
-    notes: 'Managing Director at Meenakshi Silks'
-  });
-
-  const borSaravana = await addParty({
-    name: 'M. Saravanan',
-    kind: 'PERSON',
-    roles: 'BORROWER',
-    phone: '9789600006',
-    address: 'Dindigul',
-    organizationId: orgSaravana,
-    notes: 'Proprietor at Saravana Traders'
-  });
-
-  const borStarTech = await addParty({
-    name: 'N. Prakash',
-    kind: 'PERSON',
-    roles: 'BORROWER',
-    phone: '9789700007',
-    address: 'Chennai',
-    organizationId: orgStarTech,
-    notes: 'Founder at Star Tech Solutions'
-  });
-
+  // Companies are the borrower records. Only the individual borrower needs a person record.
   const borAnnamalai = await addParty({
     name: 'T. Annamalai',
     kind: 'PERSON',
@@ -261,7 +197,7 @@ async function main() {
   const l1 = await createAccount({
     type: 'SOLO_SELF_MANAGED',
     arrangement: 'NONE',
-    borrowerId: borMurugan,
+    borrowerId: orgMurugan,
     face: '1000000',
     rate: '10',
     agreementDate: '2026-11-01',
@@ -283,7 +219,7 @@ async function main() {
   const l2 = await createAccount({
     type: 'SOLO_SELF_MANAGED',
     arrangement: 'NONE',
-    borrowerId: borLakshmi,
+    borrowerId: orgLakshmi,
     face: '500000',
     rate: '12',
     agreementDate: '2026-11-02',
@@ -304,7 +240,7 @@ async function main() {
   const l3 = await createAccount({
     type: 'SOLO_SELF_MANAGED',
     arrangement: 'NONE',
-    borrowerId: borBalaji,
+    borrowerId: orgBalaji,
     face: '1500000',
     rate: '10',
     agreementDate: '2026-11-01',
@@ -325,7 +261,7 @@ async function main() {
   const l4 = await createAccount({
     type: 'SOLO_SELF_MANAGED',
     arrangement: 'NONE',
-    borrowerId: borRoyal,
+    borrowerId: orgRoyal,
     face: '800000',
     rate: '10',
     agreementDate: '2026-10-30',
@@ -368,7 +304,7 @@ async function main() {
   const l6 = await createAccount({
     type: 'JOINT_SELF_MANAGED',
     arrangement: 'NONE',
-    borrowerId: borMeenakshi,
+    borrowerId: orgMeenakshi,
     face: '2000000',
     rate: '10',
     agreementDate: '2026-11-01',
@@ -390,7 +326,7 @@ async function main() {
   const l7 = await createAccount({
     type: 'JOINT_SELF_MANAGED',
     arrangement: 'NONE',
-    borrowerId: borSaravana,
+    borrowerId: orgSaravana,
     face: '1200000',
     rate: '10',
     agreementDate: '2026-11-03',
@@ -411,7 +347,7 @@ async function main() {
   const l8 = await createAccount({
     type: 'JOINT_SELF_MANAGED',
     arrangement: 'NONE',
-    borrowerId: borStarTech,
+    borrowerId: orgStarTech,
     face: '2500000',
     rate: '10',
     agreementDate: '2026-11-03',
@@ -431,43 +367,40 @@ async function main() {
   await markFunded(l8.id, '2026-11-03');
   console.log('Created Loan 8:', l8.reference, '- Star Tech Solutions (Joint w/ Ganesh & Subbu, ₹25L, today: ₹2.5L)');
 
-  // Loan 9: External - Managed Pool (₹50L) managed by Apex Finance Co., co-investor Ganesh (₹25L)
+  // Loan 9: Ayyappan's personal stake, managed by Ganesh for SK Traders.
   const l9 = await createAccount({
     type: 'EXTERNAL',
-    arrangement: 'MANAGED_POOL',
-    managerId: partnerApex,
-    face: '5000000',
-    rate: '15',
+    arrangement: 'OWN_STAKE_EXTERNALLY_MANAGED',
+    borrowerId: orgSkTraders,
+    managerId: partnerGanesh,
+    face: '800000',
+    rate: '12',
     agreementDate: '2026-10-15',
     basis: 'FACE_SHARE',
-    notes: 'Coimbatore textile consortium syndicated loan pool managed by Apex Finance',
-    partners: [{ partyId: partnerGanesh, amount: '2500000' }],
-    schedule: {
-      mode: 'COUNT',
-      count: 5,
-      firstDate: '2026-11-15',
-      intervalDays: 30
-    }
+    notes: 'Sample personal investment managed by Ganesh',
+    partners: []
   }, ownerId);
   await markFunded(l9.id, '2026-10-15');
-  console.log('Created Loan 9:', l9.reference, '- External Pool (Apex Finance Co., ₹50L)');
+  console.log('Created Loan 9:', l9.reference, '- SK Traders (managed by Ganesh)');
 
   // Loan 10: External - Own Stake Externally Managed (₹30L) managed by True Finance
   const l10 = await createAccount({
     type: 'EXTERNAL',
     arrangement: 'OWN_STAKE_EXTERNALLY_MANAGED',
+    borrowerId: orgNorthStar,
     managerId: partnerTrueFinance,
-    face: '3000000',
-    rate: '16',
+    face: '600000',
+    rate: '14',
     agreementDate: '2026-10-20',
     basis: 'FACE_SHARE',
-    notes: 'Direct private placement credit facility overseen by True Finance',
+    notes: 'Sample personal investment managed by True Finance',
     partners: []
   }, ownerId);
   await markFunded(l10.id, '2026-10-20');
-  console.log('Created Loan 10:', l10.reference, '- External Own Stake (True Finance, ₹30L)');
+  console.log('Created Loan 10:', l10.reference, '- North Star Exports (managed by True Finance)');
 
   console.log('--- Seeding Completed Successfully! ---');
+  }, 120000);
   await db.$disconnect();
 }
 
